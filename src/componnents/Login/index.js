@@ -8,21 +8,47 @@ import {
   TouchableOpacity,
 } from "react-native";
 
-export default function Login() {
+import firebase from "../../services/firebaseConnection";
 
-const [type, setType] = useState('login')
+export default function Login() {
+  const [type, setType] = useState("login");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  function handleLogin() {
+    if (type === "login") {
+      // login
 
-function handleLogin(){
-    alert("testee")
-}
+      const user = firebase
+        .auth()
+        .signInWithEmailAndPassword(email, password)
+        .then((user) => {
+          console.log(user.user);
+        })
+        .catch((error) => {
+          console.log(error);
+          alert("Erro!!");
+          return;
+        });
+    } else {
+      // cadastrar
+      const user = firebase
+        .auth()
+        .createUserWithEmailAndPassword(email, password)
+        .then((user) => {
+          console.log(user.user);
+        })
+        .catch((error) => {
+          console.log(error);
+          alert(`Erro!!`);
+          return;
+        });
+    }
+  }
 
   return (
     <SafeAreaView style={styles.container}>
-
       <TextInput
         placeholder="E-mail"
         style={styles.input}
@@ -36,18 +62,26 @@ function handleLogin(){
         onChangeText={(text) => setPassword(text)}
       />
 
-      <TouchableOpacity style={[styles.handleLogin, {backgroundColor: type === 'login'?'#3ea6f2':'#141414'}]}
-      onPress={handleLogin}
+      <TouchableOpacity
+        style={[
+          styles.handleLogin,
+          { backgroundColor: type === "login" ? "#3ea6f2" : "#141414" },
+        ]}
+        onPress={handleLogin}
       >
         <Text style={styles.loginText}>
-            
-            {type === 'login' ? 'Acessar':'Cadastrar'}
-            
-            </Text>
+          {type === "login" ? "Acessar" : "Cadastrar"}
+        </Text>
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={()=>setType(type => type === 'login'?'cadastrar':'login')}>
-        <Text style={{ textAlign: "center" }}>{type === 'login'?'Criar Conta':'Já possuo uma conta!'}</Text>
+      <TouchableOpacity
+        onPress={() =>
+          setType((type) => (type === "login" ? "cadastrar" : "login"))
+        }
+      >
+        <Text style={{ textAlign: "center" }}>
+          {type === "login" ? "Criar Conta" : "Já possuo uma conta!"}
+        </Text>
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -78,6 +112,6 @@ const styles = StyleSheet.create({
   },
   loginText: {
     color: "#fff",
-    fontSize:17
+    fontSize: 17,
   },
 });
