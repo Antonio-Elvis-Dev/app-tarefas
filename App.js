@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   StyleSheet,
   Text,
@@ -15,6 +15,8 @@ import TaskList from "./src/componnents/TaskList";
 import firebase from "./src/services/firebaseConnection";
 import { StatusBarHeight } from "./src/componnents/layout";
 
+import Feather from "react-native-vector-icons/Feather";
+
 // let tasks = [
 //   { key: "1", nome: "Comprar Coca" },
 //   { key: "2", nome: "Estudar" },
@@ -25,6 +27,9 @@ export default function App() {
   const [tasks, setTasks] = useState([]);
 
   const [newTask, setNewTask] = useState("");
+  const [key, setKey] = useState("");
+
+  const inputRef = useRef(null);
 
   useEffect(() => {
     function getUser() {
@@ -33,7 +38,7 @@ export default function App() {
       }
       firebase
         .database()
-        .ref("terefas")
+        .ref("tarefas")
         .child(user)
         .once("value", (snapshot) => {
           setTasks([]);
@@ -41,27 +46,64 @@ export default function App() {
           snapshot?.forEach((childItem) => {
             let data = {
               key: childItem.key,
-              name: childItem.val().nome,
+              nome: childItem.val().nome,
             };
-            setTasks(oldTasks=>[...oldTasks, data])
+            setTasks((oldTasks) => [...oldTasks, data]);
           });
         });
     }
-    getUser()
+    getUser();
   }, [user]);
+
   function handleDelete(key) {
-    console.log(key);
+    firebase
+      .database()
+      .ref("tarefas")
+      .child(user)
+      .child(key)
+      .remove()
+      .then(() => {
+        const findTasks = tasks.filter((item) => item.key !== key);
+        setTasks(findTasks);
+      });
   }
 
   function handleEdit(data) {
-    console.log("clicado", data);
+    setKey(data.key);
+    setNewTask(data.nome);
+    inputRef.current.focus();
   }
 
   function handleAdd() {
     if (newTask === "") {
       return;
     }
-    let tarefas = firebase.database().ref("terefas").child(user);
+
+    if (key !== "") {
+      firebase
+        .database()
+        .ref("tarefas")
+        .child(user)
+        .child(key)
+        .update({
+          nome: newTask,
+        })
+        .then(() => {
+          const taskIndex = tasks.findIndex((item) => item.key === key);
+
+          let taskClone = tasks;
+
+          taskClone[taskIndex].nome = newTask;
+
+          setTasks([...taskClone]);
+        });
+      Keyboard.dismiss();
+      setNewTask("");
+      setKey("");
+      return;
+    }
+
+    let tarefas = firebase.database().ref("tarefas").child(user);
     let chave = tarefas.push().key;
 
     tarefas
@@ -72,12 +114,17 @@ export default function App() {
       .then(() => {
         const data = {
           key: chave,
-          name: newTask,
+          nome: newTask,
         };
         setTasks((oldTasks) => [...oldTasks, data]);
       });
     Keyboard.dismiss();
     setNewTask("");
+  }
+
+  function cancelEdit() {
+    setKey(""), setNewTask("");
+    Keyboard.dismiss();
   }
 
   if (!user) {
@@ -86,12 +133,24 @@ export default function App() {
 
   return (
     <SafeAreaView style={[styles.container, { marginTop: StatusBarHeight }]}>
+      {key.length > 0 && (
+        <View style={{ flexDirection: "row", marginBottom: 5 }}>
+          <TouchableOpacity onPress={cancelEdit}>
+            <Feather name="x-circle" size={20} color={"#ff0000"} />
+          </TouchableOpacity>
+          <Text style={{ marginLeft: 5, color: "#ff0000" }}>
+            Você está editando uma tarefa
+          </Text>
+        </View>
+      )}
+
       <View style={styles.containerTask}>
         <TextInput
           style={styles.input}
           placeholder="Proxima tarefa"
           onChangeText={(text) => setNewTask(text)}
           value={newTask}
+          ref={inputRef}
         />
         <TouchableOpacity style={styles.buttonAdd} onPress={handleAdd}>
           <Text style={styles.buttonText}>+</Text>

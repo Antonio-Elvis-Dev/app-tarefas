@@ -19,7 +19,7 @@ export default function TaskList({ data, deleteItem, editItem }) {
 
       <View style={{paddingRight:10}}>
         <TouchableWithoutFeedback onPress={()=>editItem(data)}>
-          <Text style={styles.text}>{data.name}</Text>
+          <Text style={styles.text}>{data.nome}</Text>
         </TouchableWithoutFeedback>
       </View>
     </View>
